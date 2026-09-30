@@ -1,5 +1,12 @@
 # Box Standardization System
 
+![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi)
+![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-TS-3178C6?logo=typescript)
+![Vite](https://img.shields.io/badge/Vite-Build-646CFF?logo=vite)
+![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)
+
 Web application developed to support and optimize the box standardization and printing process in a business environment.
 
 The system centralizes spreadsheet processing, identifies pending and completed items, records box quantities, and applies validation rules to help prevent duplicate records during the printing workflow.
