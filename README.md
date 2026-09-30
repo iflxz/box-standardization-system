@@ -1,313 +1,246 @@
-# Sistema de Padronização de Caixas
+\# Box Standardization System
 
-Sistema web desenvolvido para apoiar e otimizar o processo de
-padronização e impressão de caixas em um ambiente empresarial.
 
-A aplicação centraliza o processamento das informações provenientes de
-planilhas Excel, permitindo acompanhar itens pendentes e concluídos,
-registrar a quantidade de caixas e reduzir a possibilidade de
-duplicidade durante o processo de impressão.
 
-> \*\*Nota:\*\* Este repositório é destinado a portfólio e demonstração
-> técnica. Dados, arquivos, identificadores e informações internas da
-> empresa foram omitidos ou substituídos por dados fictícios.
+Web application developed to support and optimize the box standardization and printing process in a business environment.
 
-\---
 
-## Funcionalidades
 
-* Dashboard para acompanhamento do processo
-* Importação e processamento de planilhas Excel
-* Identificação de itens pendentes
-* Controle de itens concluídos
-* Registro da quantidade de caixas
-* Fluxo de impressão
-* Prevenção de duplicidade de PEGs
-* Filtragem e validação dos dados
-* Indicador percentual de conclusão
-* Atualização dos dados processados
+The application centralizes the processing of information from Excel spreadsheets, allowing users to track pending and completed items, record the number of boxes, and reduce the possibility of duplicate records during the printing process.
+
+
+
+> \*\*Note:\*\* This repository is intended for portfolio and technical demonstration purposes. Company data, files, identifiers, and internal information have been omitted or replaced with fictional data.
+
+
 
 \---
 
-## Tecnologias utilizadas
 
-### Frontend
 
-* React
-* TypeScript / TSX
-* Vite
-* HTML5
-* CSS
+\## Features
 
-### Backend
 
-* Python
-* FastAPI
-* Pandas
-* Regular Expressions
 
-### Dados
+\* Dashboard for process monitoring
 
-* Microsoft Excel (`.xlsx`)
+\* Excel spreadsheet import and processing
 
-### Ferramentas
+\* Pending item identification
 
-* Git
-* GitHub
-* Visual Studio Code
+\* Completed item tracking
+
+\* Box quantity registration
+
+\* Printing workflow
+
+\* PEG duplication prevention
+
+\* Data filtering and validation
+
+\* Completion percentage indicator
+
+\* Processed data updates
+
+
 
 \---
 
-## Estrutura do projeto
 
 
-Sistema-Padronizacao-Caixas/
+\## Technologies
+
+
+
+\### Frontend
+
+
+
+\* React
+
+\* TypeScript / TSX
+
+\* Vite
+
+\* HTML5
+
+\* CSS
+
+
+
+\### Backend
+
+
+
+\* Python
+
+\* FastAPI
+
+\* Pandas
+
+\* Regular Expressions
+
+
+
+\### Data
+
+
+
+\* Microsoft Excel (`.xlsx`)
+
+
+
+\### Tools
+
+
+
+\* Git
+
+\* GitHub
+
+\* Visual Studio Code
+
+
+
+\---
+
+
+
+\## Project Structure
+
+
+
+box-standardization-system/
+
 │
+
 ├── backend/
+
 │   ├── main.py
+
 │   ├── requirements.txt
+
 │   └── ...
+
 │
+
 ├── frontend/
+
 │   ├── src/
+
 │   │   ├── main.tsx
+
 │   │   └── ...
+
 │   │
+
 │   ├── package.json
+
 │   └── ...
+
 │
+
 ├── .gitignore
+
 └── README.md
 
 
+
 \---
 
-## Backend
 
-O backend é responsável pelo recebimento das planilhas, processamento
-dos dados e disponibilização da API utilizada pelo frontend.
 
-### Instalação
+\## Backend
 
 
 
-Entre na pasta do backend:
+The backend is responsible for receiving spreadsheets, processing the data, and providing the API used by the frontend.
 
 
 
-bash
+\### Installation
+
+
+
+Navigate to the backend directory:
+
+
+
 cd backend
 
 
 
-Crie um ambiente virtual:
+Create a virtual environment:
 
 
 
-bash
 python -m venv venv
 
 
-No Windows, ative o ambiente:
+
+On Windows, activate the virtual environment:
 
 
 
-powershell
 venv\\Scripts\\activate
 
 
-Instale as dependências:
+
+Install the dependencies:
 
 
 
-bash
 pip install -r requirements.txt
 
 
-Execute o servidor:
+
+Start the development server:
 
 
 
-bash
 python -m uvicorn main:app --reload
 
 
-O backend estará disponível em:
+
+The backend will be available at:
 
 
 
-text
 http://127.0.0.1:8000
 
 
+
 \---
 
-## Frontend
-
-O frontend foi desenvolvido utilizando React, TypeScript e Vite.
 
 
-
-Entre na pasta:
+\## Frontend
 
 
 
-bash
+The frontend was developed using React, TypeScript, and Vite.
+
+
+
+Navigate to the frontend directory:
+
+
+
 cd frontend
 
 
-Instale as dependências:
+
+Install the dependencies:
 
 
 
-bash
 npm install
 
 
-Execute o projeto:
+
+Start the development server:
 
 
 
-bash
-npm run dev
-
-
-O frontend estará disponível normalmente em:
-
-
-http://localhost:5173
-
-
-\---
-
-## Processamento da planilha
-
-A aplicação utiliza informações específicas da planilha para realizar o
-processamento.
-
-Informação    Coluna
-
-\---
-
-Localização   D
-PEG           H
-Descrição     K
-
-Após o upload, os dados são processados e filtrados pelo backend antes
-de serem disponibilizados para a interface.
-
-Os critérios de filtragem e validação são aplicados de acordo com as
-regras definidas para o processo.
-
-\---
-
-## Fluxo da aplicação
-
-
-Planilha Excel
-      |
-      v
-    Upload
-      |
-      v
-    FastAPI
-      |
-      v
-    Pandas
-      |
-      v
-Processamento e validação
-      |
-      +-------------------+
-      |                   |
-      v                   v
- Pendências          Concluídos
-      |                   |
-      +---------+---------+
-                |
-                v
-            Dashboard
-                |
-                v
-             Impressão
-
-
-\---
-
-## API
-
-Endpoint principal utilizado pelo frontend:
-
-
-POST /processar-planilha
-
-
-O endpoint recebe a planilha enviada pelo usuário e realiza o
-processamento necessário para disponibilizar os dados para a aplicação.
-
-\---
-
-## Controle de duplicidade
-
-Um dos principais objetivos do sistema é evitar que um mesmo PEG seja
-processado ou impresso mais de uma vez.
-
-Durante o fluxo de trabalho, os registros já processados são
-considerados para impedir sua duplicação na lista de pendências e no
-processo de impressão.
-
-Essa validação contribui para maior controle e consistência das
-informações utilizadas no processo.
-
-\---
-
-## Dados e segurança
-
-A versão disponibilizada neste repositório foi preparada para fins de
-portfólio e demonstração técnica.
-
-Não devem ser incluídos no repositório:
-
-* Planilhas reais da empresa
-* PEGs reais
-* Descrições reais de produtos
-* Informações de estoque
-* Dados de funcionários
-* Caminhos de servidores internos
-* Credenciais ou tokens
-* Arquivos ou documentos confidenciais
-
-Arquivos de dados locais e informações sensíveis devem ser protegidos
-por meio do `.gitignore` e, quando necessário, de variáveis de ambiente.
-
-\---
-
-## Status do projeto
-
-Em desenvolvimento.
-
-O projeto pode receber novas funcionalidades, melhorias de interface,
-validações adicionais e futuras integrações com banco de dados.
-
-\---
-
-## Objetivos do projeto
-
-* Reduzir atividades manuais no processo
-* Centralizar informações em uma aplicação web
-* Facilitar o acompanhamento das pendências
-* Reduzir erros relacionados à duplicidade
-* Melhorar a visualização do andamento do processo
-* Criar uma base para futuras automações
-
-\---
-
-## Autor
-
-**Vinicius**
-
-FullStack Developer
-
-[GitHub](https://github.com/iflxz)  
-[LinkedIn](https://www.linkedin.com/in/vinicius-eduardo-medeiros)
+npm run
 
