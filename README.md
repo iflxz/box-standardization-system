@@ -56,15 +56,15 @@ Screenshots can be added to this section as the project interface evolves.
 
 ### Dashboard
 
-*Add screenshot here.*
+![Dashboard](docs/screenshots/dashboard.png)
 
 ### Pending Items
 
-*Add screenshot here.*
+![Pending Items](docs/screenshots/pending-items.png)
 
 ### Completed Items
 
-*Add screenshot here.*
+![Completed Items](docs/screenshots/completed-items.png)
 
 ---
 
