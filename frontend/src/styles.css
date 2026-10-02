@@ -18,6 +18,7 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+
   background: #f5f7fb;
 }
 
@@ -64,6 +65,67 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.modal-voltar-pendente .ant-modal-content {
+  background: #161B22 !important;
+  border: 1px solid #30363D !important;
+}
+
+.modal-voltar-pendente .ant-modal-header {
+  background: #161B22 !important;
+  border-bottom: 1px solid #30363D !important;
+}
+
+.modal-voltar-pendente .ant-modal-title {
+  color: #E6EDF3 !important;
+}
+
+.modal-voltar-pendente .ant-modal-body {
+  background: #161B22 !important;
+  color: #E6EDF3 !important;
+}
+
+.modal-voltar-pendente .ant-modal-footer {
+  background: #161B22 !important;
+  border-top: 1px solid #30363D !important; 
+  margin-top: 10px !important;
+  padding-top: 18px !important;
+}
+
+.modal-voltar-pendente .ant-modal-footer .ant-btn { 
+  position: relative; 
+  top: 8px; 
+}
+
+.modal-voltar-pendente .ant-modal-close {
+  color: #8B949E !important;
+}
+
+.modal-voltar-pendente .ant-modal-close:hover {
+  color: #E6EDF3 !important;
+}
+
+/* Botão cancelar */
+.modal-voltar-pendente .ant-modal-footer .ant-btn:first-child {
+  background: #DA3633 !important;
+  border-color: #DA3633 !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 2px 0 #8B1E1E !important;
+}
+
+/* Botão confirmar */
+.modal-voltar-pendente .ant-modal-footer .ant-btn-primary {
+  background: #F59E0B !important;
+  border-color: #F59E0B !important;
+  color: #0D1117 !important;
+  font-weight: 600;
+  box-shadow: 0 2px 0 #B76E00 !important;
+}
+
+/* =========================
+   RESPONSIVIDADE
+   ========================= */
+
 @media (max-width: 1100px) {
   .app {
     flex-direction: column;
@@ -72,6 +134,7 @@ input:focus {
   .sidebar {
     width: 100% !important;
     min-height: auto !important;
+
   }
 
   .sidebar nav {
@@ -83,6 +146,12 @@ input:focus {
     width: auto !important;
   }
 }
+
+  .sidebar-footer {
+    color: #8B949E !important;
+    font-size: 12px !important;
+    text-align: center !important;
+  }
 
 @media (max-width: 800px) {
   .content {

@@ -1,4 +1,3 @@
-import { BorderBottomOutlined } from "@ant-design/icons";
 import type { ThemeConfig } from "antd";
 
 export const cclogThemeColors = {
@@ -28,14 +27,12 @@ const antdTheme: ThemeConfig = {
 
     colorBgBase: cclogThemeColors.bg,
     colorBgContainer: cclogThemeColors.secondary,
+    colorBgElevated: cclogThemeColors.secondary,
 
     colorBorder: cclogThemeColors.border,
     colorBorderSecondary: cclogThemeColors.border,
 
-    colorBgElevated: cclogThemeColors.secondary,
-
     fontFamily: "Poppins, sans-serif",
-
     borderRadius: 8,
 
     colorFillQuaternary: "rgba(255, 255, 255, 0.04)",
@@ -60,7 +57,11 @@ const antdTheme: ThemeConfig = {
     },
 
     Modal: {
-      colorBgElevated: cclogThemeColors.secondary,
+      contentBg: cclogThemeColors.secondary,
+      headerBg: cclogThemeColors.secondary,
+      titleColor: cclogThemeColors.text,
+      colorIcon: cclogThemeColors.textSecondary,
+      colorIconHover: cclogThemeColors.text,
     },
 
     Alert: {
@@ -104,17 +105,15 @@ const antdTheme: ThemeConfig = {
       colorText: cclogThemeColors.textSecondary,
     },
 
-    
     Menu: {
-      darkItemBg: '#0B1F33',
-      darkItemHoverBg: '#243B53',
-      darkItemSelectedBg: '#102A43',
-      darkItemColor: '#FFFFFF',
-      darkItemHoverColor: '#FFFFFF',
-      darkItemSelectedColor: '#FFFFFF',
-      darkSubMenuItemBg: '#0B1F33',
+      darkItemBg: "#0B1F33",
+      darkItemHoverBg: "#243B53",
+      darkItemSelectedBg: "#102A43",
+      darkItemColor: "#FFFFFF",
+      darkItemHoverColor: "#FFFFFF",
+      darkItemSelectedColor: "#FFFFFF",
+      darkSubMenuItemBg: "#0B1F33",
     },
-    
   },
 };
 

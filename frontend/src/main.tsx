@@ -1,66 +1,60 @@
 import React, { useEffect, useMemo, useState } from "react";
+
 import ReactDOM from "react-dom/client";
 
 import {
   Alert,
+  App as AntApp,
   Button,
   Card,
   ConfigProvider,
-  Empty,
-  Input,
   InputNumber,
   Layout,
   Menu,
-  Progress,
+  Modal,
   Space,
-  Statistic,
-  Table,
   Tag,
   Typography,
 } from "antd";
 
 import type { ColumnsType } from "antd/es/table";
 
+import type { Peg, Tela } from "./types";
+
+import {
+  buscarDados,
+  atualizarPlanilhas as atualizarPlanilhasApi,
+  iniciarAndamento,
+  concluirPeg,
+  cancelarAndamento as cancelarAndamentoApi,
+  cancelarTodosAndamento as cancelarTodosAndamentoApi,
+  voltarParaPendente,
+} from "./services/api";
+
+import Dashboard from "./components/Dashboard";
+import Pendencias from "./components/Pendencias";
+import Andamento from "./components/Andamento";
+import Concluidos from "./components/Concluidos";
+
 import {
   AppstoreOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DatabaseOutlined,
-  InboxOutlined,
-  PrinterOutlined,
   ReloadOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
 
 import antdTheme, { cclogThemeColors } from "./theme";
+
 import "antd/dist/reset.css";
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
-const API = "http://127.0.0.1:8000";
-
-type Status = "pendente" | "andamento" | "concluido";
-
-interface Peg {
-  peg: string;
-  descricao: string;
-  quantidade_itens: number;
-  localizacoes: string;
-  quantidade_caixa: number | null;
-  status: Status;
-}
-
-type Tela =
-  | "dashboard"
-  | "pendencias"
-  | "andamento"
-  | "concluidos"
-
 function App() {
+  const { notification } = AntApp.useApp();
   const [dados, setDados] = useState<Peg[]>([]);
   const [tela, setTela] = useState<Tela>("dashboard");
-
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [quantidadeSelecionar, setQuantidadeSelecionar] =
     useState<number | null>(null);
@@ -75,6 +69,36 @@ function App() {
   const [busca, setBusca] = useState("");
 
   useEffect(() => {
+    if (mensagem) {
+      notification.success({
+        message: "Sucesso",
+        description: mensagem,
+        placement: "bottomRight",
+        duration: 5,
+      });
+
+      setMensagem("");
+    }
+  }, [mensagem, notification]);
+
+  useEffect(() => {
+    if (erro) {
+      notification.error({
+        message: "Erro",
+        description: erro,
+        placement: "bottomRight",
+        duration: 5,
+      });
+
+      setErro("");
+    }
+  }, [erro, notification]);
+
+
+  const [modalVoltarAberto, setModalVoltarAberto] = useState(false);
+  const [pegParaVoltar, setPegParaVoltar] = useState<string | null>(null);
+
+  useEffect(() => {
     carregarDados();
   }, []);
 
@@ -82,21 +106,12 @@ function App() {
     try {
       setErro("");
 
-      const resposta = await fetch(`${API}/dados`);
-
-      if (!resposta.ok) {
-        throw new Error(`Erro HTTP ${resposta.status}`);
-      }
-
-      const resultado = await resposta.json();
-
-      if (!Array.isArray(resultado.dados)) {
-        throw new Error("A API não retornou uma lista de PEGs.");
-      }
+      const resultado = await buscarDados();
 
       setDados(resultado.dados);
     } catch (erro) {
       console.error(erro);
+
       setErro("Não foi possível carregar os dados.");
     }
   }
@@ -107,22 +122,14 @@ function App() {
       setErro("");
       setMensagem("");
 
-      const resposta = await fetch(`${API}/atualizar`, {
-        method: "POST",
-      });
-
-      const resultado = await resposta.json();
-
-      if (!resposta.ok || resultado.erro) {
-        throw new Error(
-          resultado.erro || "Erro ao atualizar planilhas."
-        );
-      }
+      const resultado = await atualizarPlanilhasApi();
 
       setDados(resultado.dados);
+
       setMensagem(
         resultado.mensagem || "Planilhas atualizadas com sucesso."
       );
+
       setSelecionados([]);
     } catch (erro) {
       console.error(erro);
@@ -217,23 +224,7 @@ function App() {
       setErro("");
       setMensagem("");
 
-      const resposta = await fetch(`${API}/iniciar-andamento`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pegs: selecionados,
-        }),
-      });
-
-      const resultado = await resposta.json();
-
-      if (!resposta.ok || resultado.erro) {
-        throw new Error(
-          resultado.erro || "Erro ao iniciar andamento."
-        );
-      }
+      const resultado = await iniciarAndamento(selecionados);
 
       setDados(resultado.dados);
       setSelecionados([]);
@@ -319,7 +310,6 @@ function App() {
                 body {
                   margin: 15px;
                 }
-
               }
             </style>
           </head>
@@ -385,25 +375,7 @@ function App() {
       setErro("");
       setMensagem("");
 
-      const resposta = await fetch(`${API}/concluir-peg`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          peg,
-          quantidade_caixa: quantidade,
-        }),
-      });
-
-      const resultado = await resposta.json();
-
-      if (!resposta.ok || resultado.erro) {
-        throw new Error(
-          resultado.erro ||
-            "Erro ao atualizar a quantidade da caixa."
-        );
-      }
+      const resultado = await concluirPeg(peg, quantidade);
 
       setDados(resultado.dados);
 
@@ -434,26 +406,7 @@ function App() {
       setErro("");
       setMensagem("");
 
-      const resposta = await fetch(
-        `${API}/cancelar-andamento`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            pegs: [peg],
-          }),
-        }
-      );
-
-      const resultado = await resposta.json();
-
-      if (!resposta.ok || resultado.erro) {
-        throw new Error(
-          resultado.erro || "Erro ao cancelar andamento."
-        );
-      }
+      const resultado = await cancelarAndamentoApi(peg);
 
       setDados(resultado.dados);
 
@@ -465,9 +418,7 @@ function App() {
         return novo;
       });
 
-      setMensagem(
-        `PEG ${peg} voltou para pendências.`
-      );
+      setMensagem(`PEG ${peg} voltou para pendências.`);
     } catch (erro) {
       console.error(erro);
 
@@ -477,6 +428,79 @@ function App() {
           : "Erro ao cancelar andamento."
       );
     }
+  }
+
+  async function cancelarTodosAndamento() {
+    if (andamento.length === 0) {
+      setErro("Não há PEGs em andamento para cancelar.");
+      return;
+    }
+
+    try {
+      setCarregando(true);
+      setErro("");
+      setMensagem("");
+
+      const resultado = await cancelarTodosAndamentoApi();
+
+      setDados(resultado.dados);
+      setQuantidadesDigitadas({});
+
+      setMensagem(
+        resultado.mensagem ||
+          `${resultado.quantidade_cancelada} PEG(s) voltaram para pendências.`
+      );
+    } catch (erro) {
+      console.error(erro);
+
+      setErro(
+        erro instanceof Error
+          ? erro.message
+          : "Erro ao cancelar todos os PEGs."
+      );
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handleVoltarParaPendente(peg: string) {
+    try {
+      setCarregando(true);
+      setErro("");
+      setMensagem("");
+
+      const resultado = await voltarParaPendente(peg);
+
+      setDados(resultado.dados);
+
+      setMensagem(
+        resultado.mensagem ||
+          `PEG ${peg} voltou para pendências.`
+      );
+    } catch (erro) {
+      console.error(erro);
+
+      setErro(
+        erro instanceof Error
+          ? erro.message
+          : "Erro ao voltar o PEG para pendências."
+      );
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function confirmarVoltarParaPendente() {
+    if (!pegParaVoltar) {
+      return;
+    }
+
+    const peg = pegParaVoltar;
+
+    await handleVoltarParaPendente(peg);
+
+    setModalVoltarAberto(false);
+    setPegParaVoltar(null);
   }
 
   const pendentes = dados.filter(
@@ -490,13 +514,6 @@ function App() {
   const concluidos = dados.filter(
     (item) => item.status === "concluido"
   );
-
-  const progresso =
-    dados.length > 0
-      ? Math.round(
-          (concluidos.length / dados.length) * 100
-        )
-      : 0;
 
   const dadosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -597,10 +614,11 @@ function App() {
       title: "Qtd. Caixa",
       key: "quantidade_caixa",
       width: 150,
+
       render: (_, record) => (
         <InputNumber
           min={1}
-         precision={0}
+          precision={0}
           value={quantidadesDigitadas[record.peg] ?? null}
           onChange={(value) => {
             setQuantidadesDigitadas((prev) => ({
@@ -608,9 +626,13 @@ function App() {
               [record.peg]: value,
             }));
           }}
-          onPressEnter={() => confirmarQuantidadeCaixa(record.peg)}
+          onPressEnter={() =>
+            confirmarQuantidadeCaixa(record.peg)
+          }
           placeholder="Qtd."
-          style={{ width: "100%" }}
+          style={{
+            width: "100%",
+          }}
         />
       ),
     },
@@ -626,7 +648,8 @@ function App() {
           type="primary"
           onClick={() => cancelarAndamento(item.peg)}
           style={{
-            boxShadow: "0 2px 0 rgba(218, 54, 51, 0.45)",
+            boxShadow:
+              "0 2px 0 rgba(218, 54, 51, 0.45)",
           }}
         >
           Cancelar
@@ -655,6 +678,32 @@ function App() {
       key: "quantidade_caixa",
       width: 130,
       align: "center",
+    },
+
+    {
+      title: "Ação",
+      key: "acao",
+      width: 190,
+
+      render: (_, item) => (
+        <Button
+          type="primary"
+          onClick={() => {
+            setPegParaVoltar(item.peg);
+            setModalVoltarAberto(true);
+          }}
+          loading={carregando}
+          style={{
+            fontWeight: 600,
+            backgroundColor: "#F59E0B",
+            borderColor: "#F59E0B",
+            color: "#FFFFFF",
+            boxShadow: "0 2px 0 #B76E00",
+          }}
+        >
+          Voltar para pendentes
+        </Button>
+      ),
     },
   ];
 
@@ -735,387 +784,101 @@ function App() {
         }
 
         .dashboard-card {
-        transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            border-color 0.2s ease;
         }
 
         .dashboard-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+          transform: translateY(-4px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-voltar-pendente .ant-modal-content {
+          background: #161B22 !important;
+          border: 1px solid #30363D !important;
+        }
+
+        .modal-voltar-pendente .ant-modal-header {
+          background: #161B22 !important;
+          border-bottom: 1px solid #30363D !important;
+        }
+
+        .modal-voltar-pendente .ant-modal-title {
+          color: #E6EDF3 !important;
+        }
+
+        .modal-voltar-pendente .ant-modal-body {
+          background: #161B22 !important;
+          color: #E6EDF3 !important;
+        }
+
+        .modal-voltar-pendente .ant-modal-footer {
+          background: #161B22 !important;
+          border-top: 1px solid #30363D !important;
+        }
+
+        .modal-voltar-pendente .ant-modal-close {
+          color: #8B949E !important;
+        }
+
+        .modal-voltar-pendente .ant-modal-close:hover {
+          color: #E6EDF3 !important;
         }
       `}
     </style>
   );
 
-
   function renderConteudo() {
     if (tela === "dashboard") {
       return (
-        <Space
-          direction="vertical"
-          size="large"
-          style={{ width: "100%" }}
-        >
-          <Title level={2}>Dashboard</Title>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(190px, 1fr))",
-              gap: 16,
-            }}
-          >
-            <Card
-              className="dashboard-card"
-              style={{
-                borderLeft: `4px solid ${cclogThemeColors.cyan}`,
-              }}
-            >
-              <Statistic
-                title={
-                  <span
-                    style={{
-                      color: cclogThemeColors.text,
-                    }}
-                  >
-                    Total de PEGs
-                  </span>
-                }
-                value={dados.length}
-                prefix={
-                  <DatabaseOutlined
-                    style={{
-                      color: cclogThemeColors.cyan,
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: cclogThemeColors.text,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-
-            <Card
-              className="dashboard-card"
-              style={{
-                borderLeft: `4px solid ${cclogThemeColors.red}`,
-              }}
-            >
-              <Statistic
-                title={
-                  <span
-                    style={{
-                      color: cclogThemeColors.text,
-                    }}
-                  >
-                    Pendentes
-                  </span>
-                }
-                value={pendentes.length}
-                prefix={
-                  <InboxOutlined
-                    style={{
-                      color: cclogThemeColors.red,
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: cclogThemeColors.text,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-
-            <Card
-              className="dashboard-card"
-              style={{
-                borderLeft: `4px solid ${cclogThemeColors.primary}`,
-              }}
-            >
-              <Statistic
-                title={
-                  <span
-                    style={{
-                      color: cclogThemeColors.text,
-                    }}
-                  >
-                    Em andamento
-                  </span>
-                }
-                value={andamento.length}
-                prefix={
-                  <ClockCircleOutlined
-                    style={{
-                      color: cclogThemeColors.primary,
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: cclogThemeColors.text,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-
-            <Card
-              className="dashboard-card"
-              style={{
-                borderLeft: `4px solid ${cclogThemeColors.green}`,
-              }}
-            >
-              <Statistic
-                title={
-                  <span
-                    style={{
-                      color: cclogThemeColors.text,
-                    }}
-                  >
-                    Concluídos
-                  </span>
-                }
-                value={concluidos.length}
-                prefix={
-                  <CheckCircleOutlined
-                    style={{
-                      color: cclogThemeColors.green,
-                    }}
-                  />
-                }
-                valueStyle={{
-                  color: cclogThemeColors.text,
-                  fontWeight: 700,
-                }}
-              />
-            </Card>
-          </div>
-
-          <Card title="Progresso">
-            <Progress
-              percent={progresso}
-              status={
-                progresso === 100
-                  ? "success"
-                  : "active"
-              }
-            />
-          </Card>
-
-          <Card
-            title="Atualização dos dados"
-            style={{
-              marginTop: 4,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 24,
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <Text
-                  strong
-                  style={{
-                    display: "block",
-                    fontSize: 16,
-                    marginBottom: 6,
-                  }}
-                >
-                  Atualizar planilhas
-                </Text>
-
-                <Text type="secondary">
-                  Reprocesse as planilhas para atualizar os PEGs
-                  disponíveis no sistema.
-                </Text>
-              </div>
-
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                loading={carregando}
-                onClick={atualizarPlanilhas}
-                size="large"
-                style={{
-                  height: 48,
-                  paddingLeft: 28,
-                  paddingRight: 28,
-                  fontWeight: 600,
-                  boxShadow: "0 2px 0 rgba(245, 158, 11, 0.35)",
-                }}
-              >
-                Atualizar planilhas
-              </Button>
-            </div>
-          </Card>
-        </Space>
+        <Dashboard
+          dados={dados}
+          carregando={carregando}
+          atualizarPlanilhas={atualizarPlanilhas}
+        />
       );
     }
 
     if (tela === "pendencias") {
       return (
-        <Space
-          direction="vertical"
-          size="large"
-          style={{ width: "100%" }}
-        >
-          <div>
-            <Title level={2}>Pendências</Title>
-
-            <Text type="secondary">
-              Selecione os PEGs que deseja imprimir.
-            </Text>
-          </div>
-
-          <Card>
-            <Space wrap>
-              <InputNumber
-                min={1}
-                max={pendentes.length}
-                value={quantidadeSelecionar}
-                placeholder="Qtd. PEGs"
-                onChange={(valor) =>
-                  setQuantidadeSelecionar(valor)
-                }
-                style={{
-                  width: 140,
-                }}
-              />
-
-              <Button onClick={selecionarQuantidade}>
-                Selecionar quantidade
-              </Button>
-
-              <Button onClick={selecionarTodosVisiveis}>
-                Selecionar todos
-              </Button>
-
-              <Button onClick={limparSelecao}>
-                Limpar seleção
-              </Button>
-
-              <Button
-                type="primary"
-                icon={<PrinterOutlined />}
-                disabled={selecionados.length === 0}
-                loading={carregando}
-                onClick={imprimirSelecionados}
-              >
-                Imprimir ({selecionados.length})
-              </Button>
-            </Space>
-          </Card>
-
-          <Card>
-            <Input
-              placeholder="Buscar por PEG, descrição ou endereço..."
-              value={busca}
-              onChange={(evento) =>
-                setBusca(evento.target.value)
-              }
-              allowClear
-              style={{
-                marginBottom: 16,
-              }}
-            />
-
-            <Table
-              rowKey="peg"
-              columns={colunasPendencias}
-              dataSource={dadosFiltrados}
-              pagination={{
-                pageSize: 15,
-                showSizeChanger: false,
-                position: ["bottomCenter"],
-              }}
-              locale={{
-                emptyText: (
-                  <Empty description="Nenhuma pendência encontrada" />
-                ),
-              }}
-            />
-          </Card>
-        </Space>
+        <Pendencias
+          pendentes={pendentes}
+          dadosFiltrados={dadosFiltrados}
+          selecionados={selecionados}
+          quantidadeSelecionar={quantidadeSelecionar}
+          busca={busca}
+          carregando={carregando}
+          colunasPendencias={colunasPendencias}
+          selecionarQuantidade={selecionarQuantidade}
+          selecionarTodosVisiveis={selecionarTodosVisiveis}
+          limparSelecao={limparSelecao}
+          imprimirSelecionados={imprimirSelecionados}
+          setQuantidadeSelecionar={setQuantidadeSelecionar}
+          setBusca={setBusca}
+        />
       );
     }
 
     if (tela === "andamento") {
       return (
-        <Space
-          direction="vertical"
-          size="large"
-          style={{ width: "100%" }}
-        >
-          <div>
-            <Title level={2}>Em andamento</Title>
-
-            <Text type="secondary">
-              PEGs que já foram impressos e estão sendo
-              coletados.
-            </Text>
-          </div>
-
-          <Card>
-            <Table
-              rowKey="peg"
-              columns={colunasAndamento}
-              dataSource={andamento}
-              pagination={{
-                pageSize: 15,
-                position: ["bottomCenter"],
-              }}
-              locale={{
-                emptyText: (
-                  <Empty description="Nenhum PEG em andamento" />
-                ),
-              }}
-            />
-          </Card>
-        </Space>
+        <Andamento
+          andamento={andamento}
+          carregando={carregando}
+          colunasAndamento={colunasAndamento}
+          cancelarTodosAndamento={cancelarTodosAndamento}
+        />
       );
     }
 
     if (tela === "concluidos") {
       return (
-        <Space
-          direction="vertical"
-          size="large"
-          style={{ width: "100%" }}
-        >
-          <div>
-            <Title level={2}>Concluídos</Title>
-
-            <Text type="secondary">
-              PEGs já finalizados e suas respectivas
-              quantidades por caixas.
-            </Text>
-          </div>
-
-          <Card>
-            <Table
-              rowKey="peg"
-              columns={colunasConcluidos}
-              dataSource={concluidos}
-              pagination={{
-                pageSize: 15,
-                showSizeChanger: false,
-                position: ["bottomCenter"],
-              }}
-              locale={{
-                emptyText: (
-                  <Empty description="Nenhum PEG concluído" />
-                ),
-              }}
-            />
-          </Card>
-        </Space>
+        <Concluidos
+          concluidos={concluidos}
+          colunasConcluidos={colunasConcluidos}
+          voltarParaPendente={handleVoltarParaPendente}
+        />
       );
     }
 
@@ -1154,7 +917,6 @@ function App() {
               gap: 18,
             }}
           >
-
             <div>
               <Text
                 strong
@@ -1198,80 +960,165 @@ function App() {
     <>
       {estilosGlobais}
 
+      <Modal
+        open={modalVoltarAberto}
+        centered
+        title="Voltar PEG para pendentes?"
+        className="modal-voltar-pendente"
+        onCancel={() => {
+          setModalVoltarAberto(false);
+          setPegParaVoltar(null);
+        }}
+        footer={[
+          <Button
+            key="cancelar"
+            onClick={() => {
+              setModalVoltarAberto(false);
+              setPegParaVoltar(null);
+            }}
+            style={{
+              marginTop: 12,
+              backgroundColor: "#DA3633",
+              borderColor: "#DA3633",
+              color: "#FFFFFF",
+              fontWeight: 600,
+              boxShadow: "0 2px 0 #8B1E1B",
+            }}
+          >
+            Cancelar
+          </Button>,
+
+          <Button
+            key="confirmar"
+            type="primary"
+            loading={carregando}
+            onClick={confirmarVoltarParaPendente}
+            style={{
+              marginTop: 12,
+              backgroundColor: "#F59E0B",
+              borderColor: "#F59E0B",
+              color: "#FFFFFF",
+              fontWeight: 600,
+              boxShadow: "0 2px 0 #B76E00",
+            }}
+          >
+            Sim, voltar
+          </Button>,
+        ]}
+      >
+        <div
+          style={{
+            color: "#E6EDF3",
+            fontSize: 15,
+            paddingTop: 8,
+            paddingBottom: 8,
+          }}
+        >
+          O PEG{" "}
+          <strong
+            style={{
+              color: "#F59E0B",
+              fontSize: 17,
+            }}
+          >
+            {pegParaVoltar}
+          </strong>{" "}
+          será retirado de concluídos e voltará para a lista de
+          pendências.
+        </div>
+      </Modal>
+
       <Layout
         style={{
           minHeight: "100vh",
         }}
       >
-        <Sider width={240}>
+        <Sider
+          width={240}
+          style={{
+            height: "100vh",
+            position: "sticky",
+            top: 0,
+            left: 0,
+            overflow: "hidden",
+          }}
+        >
           <div
             style={{
-              height: 64,
+              minHeight: "100vh",
               display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "0 20px",
-              fontWeight: 700,
-              fontSize: 20,
-              color: "#FFFFFF",
-            }}
-          >
-            <span style={{ color: cclogThemeColors.primary }}>◈</span>
-            LOGO
-          </div>
-
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[tela]}
-            onClick={({ key }) => {
-              setTela(key as Tela);
-              setMensagem("");
-              setErro("");
-            }}
-            items={[
-              {
-                key: "dashboard",
-                icon: <AppstoreOutlined />,
-                label: "Dashboard",
-              },
-              {
-                key: "pendencias",
-                icon: <UnorderedListOutlined />,
-                label: "Pendências",
-              },
-              {
-                key: "andamento",
-                icon: <ClockCircleOutlined />,
-                label: "Em andamento",
-              },
-              {
-                key: "concluidos",
-                icon: <CheckCircleOutlined />,
-                label: "Concluídos",
-              },
-            ]}
-          />
-
-          <div
-            style={{
-              position: "absolute",
-              bottom: 20,
-              left: 0,
-              width: "100%",
-              padding: "0 20px",
-              boxSizing: "border-box",
-              textAlign: "center",
+              flexDirection: "column",
             }}
           >
             <div
               style={{
-                fontSize: 12,
-                color: cclogThemeColors.textSecondary,
-                marginBottom: 4,
+                height: 64,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "0 20px",
+                fontWeight: 700,
+                fontSize: 20,
+                color: "#FFFFFF",
+                flexShrink: 0,
               }}
             >
-              
+              <span
+                style={{
+                  color: cclogThemeColors.primary,
+                }}
+              >
+                ◈
+              </span>
+
+              CCLOG
+            </div>
+
+            <Menu
+              theme="dark"
+              mode="inline"
+              selectedKeys={[tela]}
+              onClick={({ key }) => {
+                setTela(key as Tela);
+                setMensagem("");
+                setErro("");
+              }}
+              items={[
+                {
+                  key: "dashboard",
+                  icon: <AppstoreOutlined />,
+                  label: "Dashboard",
+                },
+                {
+                  key: "pendencias",
+                  icon: <UnorderedListOutlined />,
+                  label: "Pendências",
+                },
+                {
+                  key: "andamento",
+                  icon: <ClockCircleOutlined />,
+                  label: "Em andamento",
+                },
+                {
+                  key: "concluidos",
+                  icon: <CheckCircleOutlined />,
+                  label: "Concluídos",
+                },
+              ]}
+            />
+
+            <div
+              className="sidebar-footer"
+              style={{
+                marginTop: "auto",
+                padding: "20px",
+                fontSize: 12,
+                color: "#8B949E",
+                textAlign: "center",
+                lineHeight: 1.5,
+              }}
+            >
+              © Posigraf 2026. Todos os direitos reservados.
             </div>
           </div>
         </Sider>
@@ -1301,31 +1148,6 @@ function App() {
               padding: 24,
             }}
           >
-            {mensagem && (
-              <Alert
-                message={mensagem}
-                type="success"
-                showIcon
-                closable
-                onClose={() => setMensagem("")}
-                style={{
-                  marginBottom: 16,
-                }}
-              />
-            )}
-
-            {erro && (
-              <Alert
-                message={erro}
-                type="error"
-                showIcon
-                closable
-                onClose={() => setErro("")}
-                style={{
-                  marginBottom: 16,
-                }}
-              />
-            )}
 
             {renderConteudo()}
           </Content>
@@ -1340,7 +1162,9 @@ ReactDOM.createRoot(
 ).render(
   <React.StrictMode>
     <ConfigProvider theme={antdTheme}>
-      <App />
+      <AntApp>
+        <App />
+      </AntApp>
     </ConfigProvider>
   </React.StrictMode>
 );
